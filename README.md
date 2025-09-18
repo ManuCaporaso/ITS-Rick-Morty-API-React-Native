@@ -33,7 +33,7 @@ npm start
 
 **Expo:** Conjunto de herramientas y servicios para construir aplicaciones de React Native.
 
-**Expo Router:* Sistema de navegación basado en archivos para crear stacks y tabs de forma declarativa.
+**Expo Router:** Sistema de navegación basado en archivos para crear stacks y tabs de forma declarativa.
 
 **Context API & useReducer:** Para el manejo de estado global de la lista de favoritos.
 
