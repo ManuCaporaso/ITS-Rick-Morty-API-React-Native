@@ -1,98 +1,170 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 import { Link } from 'expo-router';
+import { logEvent } from '../../telemetry/telemetry';
+import { useNetInfo } from '../../hooks/useNetInfo';
+import { fetchCharacters } from '../../api/rickAndMortyApi';
 
-export default function HomeScreen() {
+const CharacterCard = ({ character }) => {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <Link href={`/character/${character.id}`} asChild>
+      <TouchableOpacity style={styles.card}>
+        <Image source={{ uri: character.image }} style={styles.image} />
+        <View style={styles.info}>
+          <Text style={styles.name}>{character.name}</Text>
+          <Text style={styles.status}>{character.status}</Text>
+        </View>
+      </TouchableOpacity>
+    </Link>
+  );
+};
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+export default function CharactersScreen() {
+  const [characters, setCharacters] = useState([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const isConnected = useNetInfo();
+
+  const loadInitialData = async () => {
+    if (!isConnected) {
+      Alert.alert('Sin conexión', 'No se pudieron cargar los datos. Conéctate a internet para ver los personajes.');
+      logEvent('Error', { type: 'No connection', screen: 'CharactersScreen' });
+      setLoading(false);
+      return;
+    }
+    await fetchData(1);
+  };
+
+  const fetchData = async (pageNum) => {
+    setLoading(true);
+    try {
+      const data = await fetchCharacters(pageNum);
+      if (data.results) {
+        setCharacters(prev => [...prev, ...data.results]);
+        logEvent('Data Loaded', { page: pageNum, count: data.results.length });
+      }
+    } catch (error) {
+      console.error('Error fetching characters:', error);
+      logEvent('Error', { type: 'API Fetch', error: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadMore = () => {
+    if (isConnected) {
+      setPage(prev => prev + 1);
+      fetchData(page + 1);
+    } else {
+      Alert.alert('Sin conexión', 'No puedes cargar más personajes sin conexión.');
+      logEvent('Error', { type: 'Load more without connection' });
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {loading && characters.length === 0 ? (
+        <View style={styles.centeredView}>
+          <ActivityIndicator size="large" color="teal" />
+          <Text style={{ marginTop: 10 }}>Cargando...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={characters}
+          renderItem={({ item }) => <CharacterCard character={item} />}
+          keyExtractor={item => item.id.toString()}
+          ListFooterComponent={() => (
+            <View style={styles.footer}>
+              {loading && <ActivityIndicator size="large" color="teal" />}
+              {!loading && isConnected && (
+                <TouchableOpacity onPress={loadMore} style={styles.loadMoreButton}>
+                  <Text style={styles.loadMoreText}>Cargar más</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        />
+      )}
+      {!isConnected && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineText}>Modo Offline - Datos desactualizados</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#f0f0f0',
+  },
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginHorizontal: 15,
+    marginVertical: 8,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  image: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 15,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
+  info: {
+    flex: 1,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  status: {
+    fontSize: 14,
+    color: 'gray',
+  },
+  footer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadMoreButton: {
+    backgroundColor: 'teal',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+  },
+  loadMoreText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  offlineBanner: {
+    backgroundColor: '#ff6347',
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
     bottom: 0,
     left: 0,
-    position: 'absolute',
+    right: 0,
+  },
+  offlineText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

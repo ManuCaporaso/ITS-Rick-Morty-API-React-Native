@@ -1,24 +1,25 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { FavoritesProvider } from '../contexts/FavoritesContext';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <FavoritesProvider>
       <Stack>
+        {/* This screen uses the layout from the (tabs) folder,
+            which contains the Tab Navigator.
+            headerShown: false hides the top navigation bar for this screen. */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        
+        {/* This is the individual screen for character details.
+            It will be pushed on top of the tab navigator. */}
+        <Stack.Screen 
+          name="character/[id]" 
+          options={{ 
+            headerTitle: 'Detalles del Personaje',
+            headerBackTitleVisible: false,
+          }} 
+        />
       </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    </FavoritesProvider>
   );
 }
