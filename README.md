@@ -10,17 +10,20 @@ Clona este repositorio:
 Bash
 git clone https://github.com/ManuCaporaso/ITS-Rick-Morty-API-React-Native
 cd MultiversoHub
+```
 
 Instala las dependencias:
 
 ```
 Bash
 npm install
-Inicia la aplicación:
+```
 
+Inicia la aplicación:
 ```
 Bash
 npm start
+```
 
 Escanea el código QR con la aplicación Expo Go en tu dispositivo móvil o presiona w para ver la versión web.
 
