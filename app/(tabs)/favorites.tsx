@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useFavorites } from '../../contexts/FavoritesContext';
+import { logEvent } from '../../telemetry/telemetry';
 import { Link } from 'expo-router';
 
 const FavoriteCard = ({ character }) => {
   const { dispatch } = useFavorites();
 
   const handleRemoveFavorite = () => {
+    logEvent('Remove Favorite', { characterId: character.id, characterName: character.name });
     dispatch({ type: 'REMOVE_FAVORITE', payload: character });
   };
 

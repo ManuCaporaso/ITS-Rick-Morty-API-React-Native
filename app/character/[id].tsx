@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useFavorites } from '../../contexts/FavoritesContext';
+import { logEvent } from '../../telemetry/telemetry';
+
 import { Ionicons } from '@expo/vector-icons';
 
 const API_URL = 'https://rickandmortyapi.com/api/character';
@@ -35,8 +37,10 @@ export default function CharacterDetailScreen() {
   const toggleFavorite = () => {
     if (isFavorite) {
       dispatch({ type: 'REMOVE_FAVORITE', payload: character });
+      logEvent('Remove Favorite', { characterId: character.id, characterName: character.name });
     } else {
       dispatch({ type: 'ADD_FAVORITE', payload: character });
+      logEvent('Add Favorite', { characterId: character.id, characterName: character.name });
     }
   };
 
