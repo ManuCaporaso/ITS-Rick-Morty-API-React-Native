@@ -1,7 +1,7 @@
 # 🛸 MultiversoHub: Rick & Morty App
 Una aplicación móvil educativa y de entretenimiento basada en el universo de la serie animada Rick and Morty. Permite a los usuarios explorar personajes, gestionar una lista de favoritos, acceder a detalles extendidos e interactuar con la app incluso sin conexión a internet.
 
-## Integrantes
+## 👽 Integrantes
 **MANUEL CAPORASO**
 
 **CRISTIAN TESTASECA**
