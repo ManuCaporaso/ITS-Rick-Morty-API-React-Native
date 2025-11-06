@@ -1,11 +1,26 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../contexts/ThemeContext'; 
+import { StyleSheet } from 'react-native';
 
 export default function TabScreensLayout() {
+  const { theme } = useTheme(); 
+
+  
+  const tabBarStyle = StyleSheet.create({
+    bar: {
+        backgroundColor: theme.cardBackground, 
+        borderTopColor: theme.cardBackground, 
+      },
+  });
+
   return (
     <Tabs screenOptions={{
-      tabBarActiveTintColor: 'teal',
-      headerShown: false, // We hide this header because the main stack provides one
+      // Aplicamos los colores dinámicos
+      tabBarActiveTintColor: theme.title, 
+      tabBarInactiveTintColor: theme.subText,
+      tabBarStyle: tabBarStyle.bar,
+      headerShown: false,
     }}>
       <Tabs.Screen
         name="index"

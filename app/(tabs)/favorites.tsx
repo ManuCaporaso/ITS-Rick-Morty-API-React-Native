@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useFavorites } from '../../contexts/FavoritesContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { logEvent } from '../../telemetry/telemetry';
 import { Link } from 'expo-router';
 
-const FavoriteCard = ({ character }) => {
+const FavoriteCard = ({ character, styles }) => {
   const { dispatch } = useFavorites();
 
   const handleRemoveFavorite = () => {
@@ -14,7 +15,7 @@ const FavoriteCard = ({ character }) => {
 
   return (
     <View style={styles.card}>
-      <Link href={`/character/${character.id}`} asChild>
+      <Link href={`/character/${character?.id?.toString()}`} asChild> 
         <TouchableOpacity style={styles.infoContainer}>
           <Image source={{ uri: character.image }} style={styles.image} />
           <View>
@@ -32,45 +33,49 @@ const FavoriteCard = ({ character }) => {
 
 export default function FavoritesScreen() {
   const { favorites } = useFavorites();
+  const { theme } = useTheme(); 
+  
+  const dynamicStyles = getStyles(theme);
 
   return (
-    <View style={styles.container}>
+    <View style={dynamicStyles.container}>
       {favorites.length === 0 ? (
-        <Text style={styles.emptyText}>No tienes personajes favoritos.</Text>
+        <Text style={dynamicStyles.emptyText}>No tienes personajes favoritos.</Text>
       ) : (
         <FlatList
           data={favorites}
-          renderItem={({ item }) => <FavoriteCard character={item} />}
-          keyExtractor={item => item.id.toString()}
+          renderItem={({ item }) => <FavoriteCard character={item} styles={dynamicStyles} />}
+          keyExtractor={item => item?.id?.toString() || Math.random().toString()}
         />
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+
+const getStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.background, 
     padding: 15,
   },
   emptyText: {
     textAlign: 'center',
     marginTop: 50,
     fontSize: 16,
-    color: 'gray',
+    color: theme.subText, 
   },
   card: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.cardBackground, 
     borderRadius: 10,
     padding: 10,
     marginVertical: 8,
-    shadowColor: '#000',
+    shadowColor: theme.text === '#ffffff' ? '#000000' : '#000', 
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: theme.text === '#ffffff' ? 0.3 : 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -87,10 +92,11 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: theme.text,
   },
   status: {
     fontSize: 12,
-    color: 'gray',
+    color: theme.subText,
   },
   removeButton: {
     backgroundColor: 'red',

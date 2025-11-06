@@ -1,3 +1,5 @@
+// CONSUMO DE API DE RICK AND MORTY
+
 const BASE_URL = 'https://rickandmortyapi.com/api';
 
 export const fetchCharacters = async (page = 1) => {

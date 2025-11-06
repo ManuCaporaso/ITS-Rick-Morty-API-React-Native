@@ -1,6 +1,10 @@
 # 🛸 MultiversoHub: Rick & Morty App
 Una aplicación móvil educativa y de entretenimiento basada en el universo de la serie animada Rick and Morty. Permite a los usuarios explorar personajes, gestionar una lista de favoritos, acceder a detalles extendidos e interactuar con la app incluso sin conexión a internet.
 
+## Integrantes
+**MANUEL CAPORASO**
+**CRISTIAN TESTASECA**
+
 ## 🚀 Cómo ejecutar el proyecto
 Para poner en marcha la aplicación en tu entorno local, sigue estos sencillos pasos:
 
@@ -22,7 +26,7 @@ npm install
 ### Inicia la aplicación:
 ```
 Bash
-npm start
+npx expo start
 ```
 
 ### Escanea el código QR con la aplicación Expo Go en tu dispositivo móvil o presiona w para ver la versión web.

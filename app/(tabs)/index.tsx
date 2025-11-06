@@ -1,11 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
 import { Link } from 'expo-router';
 import { logEvent } from '../../telemetry/telemetry';
 import { useNetInfo } from '../../hooks/useNetInfo';
 import { fetchCharacters } from '../../api/rickAndMortyApi';
+import { useTheme } from '../../contexts/ThemeContext'; 
+import { useFavorites } from '../../contexts/FavoritesContext'; 
 
-const CharacterCard = ({ character }) => {
+// Componente de Tarjeta de Personaje
+const CharacterCard = ({ character, styles }) => {
+  if (!character || !character.id) {
+    return (
+      <View style={[styles.card, { opacity: 0.5 }]}>
+        <Text style={{color: 'red'}}>Error: No se pudo cargar el personaje.</Text>
+      </View>
+    );
+  }
+
   return (
     <Link href={`/character/${character.id}`} asChild>
       <TouchableOpacity style={styles.card}>
@@ -19,29 +30,95 @@ const CharacterCard = ({ character }) => {
   );
 };
 
+// Componente de Resumen y Filtros
+const SummaryHeader = ({ totalCharacters, totalFavorites, currentFilter, setFilter, styles, theme }) => {
+    const filterOptions = ['All', 'Alive', 'Dead', 'unknown'];
+
+    return (
+        <View style={styles.summaryContainer}>
+            <Text style={styles.summaryTitle}>Estadísticas del Multiverso Rick & Morty</Text>
+            
+            <View style={styles.statsRow}>
+                <View style={styles.statBox}>
+                    <Text style={styles.statNumber}>{totalCharacters}</Text>
+                    <Text style={styles.statLabel}>Cargados</Text>
+                </View>
+                <View style={styles.statBox}>
+                    <Text style={[styles.statNumber, {color: theme.title}]}>{totalFavorites}</Text>
+                    <Text style={styles.statLabel}>Favoritos</Text>
+                </View>
+            </View>
+
+            <Text style={styles.filterTitle}>Filtrar por Estado:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                {filterOptions.map(filter => (
+                    <TouchableOpacity
+                        key={filter}
+                        onPress={() => setFilter(filter)}
+                        style={[
+                            styles.filterButton,
+                            currentFilter === filter && styles.filterButtonActive
+                        ]}
+                    >
+                        <Text style={[
+                            styles.filterButtonText,
+                            currentFilter === filter && styles.filterButtonTextActive
+                        ]}>
+                            {filter === 'All' ? 'Mostrar Todos' : filter}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+        </View>
+    );
+};
+
+
 export default function CharactersScreen() {
   const [characters, setCharacters] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [currentFilter, setCurrentFilter] = useState('All'); 
+  
   const isConnected = useNetInfo();
+  const { theme } = useTheme(); 
+  const { favorites } = useFavorites(); 
 
-  const loadInitialData = async () => {
-    if (!isConnected) {
-      Alert.alert('Sin conexión', 'No se pudieron cargar los datos. Conéctate a internet para ver los personajes.');
+  // Lógica para filtrar la lista de personajes
+  const filteredCharacters = useMemo(() => {
+    if (currentFilter === 'All') {
+        return characters;
+    }
+    return characters.filter(char => char.status === currentFilter);
+  }, [characters, currentFilter]);
+
+  // Función para obtener los datos
+  const fetchData = async (pageNum) => {
+    if (!isConnected && pageNum === 1) {
+      Alert.alert('Sin conexión', 'No se pudieron cargar los datos iniciales. Conéctate a internet.');
       logEvent('Error', { type: 'No connection', screen: 'CharactersScreen' });
       setLoading(false);
       return;
     }
-    await fetchData(1);
-  };
 
-  const fetchData = async (pageNum) => {
     setLoading(true);
     try {
       const data = await fetchCharacters(pageNum);
-      if (data.results) {
-        setCharacters(prev => [...prev, ...data.results]);
-        logEvent('Data Loaded', { page: pageNum, count: data.results.length });
+      
+      if (data.results && Array.isArray(data.results)) {
+        
+        if (pageNum === 1) {
+          setCharacters(data.results);
+          logEvent('Data Loaded', { page: pageNum, count: data.results.length, type: 'Initial Load' });
+
+        } else {
+          // Filtra duplicados al cargar más páginas
+          const existingIds = new Set(characters.map(c => c.id));
+          const newUniqueCharacters = data.results.filter(c => !existingIds.has(c.id));
+
+          setCharacters(prev => [...prev, ...newUniqueCharacters]);
+          logEvent('Data Loaded', { page: pageNum, count: newUniqueCharacters.length, type: 'Load More' });
+        }
       }
     } catch (error) {
       console.error('Error fetching characters:', error);
@@ -50,70 +127,159 @@ export default function CharactersScreen() {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    fetchData(page);
+  }, [page]); 
 
   const loadMore = () => {
     if (isConnected) {
       setPage(prev => prev + 1);
-      fetchData(page + 1);
     } else {
       Alert.alert('Sin conexión', 'No puedes cargar más personajes sin conexión.');
       logEvent('Error', { type: 'Load more without connection' });
     }
   };
+  
+  const dynamicStyles = getStyles(theme);
+
+  if (loading && characters.length === 0) {
+     return (
+        <View style={dynamicStyles.centeredView}>
+          <ActivityIndicator size="large" color={theme.title} />
+          <Text style={[dynamicStyles.text, { marginTop: 10 }]}>Cargando...</Text>
+        </View>
+      );
+  }
 
   return (
-    <View style={styles.container}>
-      {loading && characters.length === 0 ? (
-        <View style={styles.centeredView}>
-          <ActivityIndicator size="large" color="teal" />
-          <Text style={{ marginTop: 10 }}>Cargando...</Text>
-        </View>
-      ) : (
+    <View style={dynamicStyles.container}>
         <FlatList
-          data={characters}
-          renderItem={({ item }) => <CharacterCard character={item} />}
-          keyExtractor={item => item.id.toString()}
+          data={Array.isArray(filteredCharacters) ? filteredCharacters : []} // USAR DATOS FILTRADOS
+          renderItem={({ item }) => <CharacterCard character={item} styles={dynamicStyles} />}
+          keyExtractor={item => item?.id?.toString() || Math.random().toString()}
+          
+          // HEADER FIJO CON RESUMEN Y FILTROS
+          ListHeaderComponent={() => (
+              <SummaryHeader 
+                  totalCharacters={characters.length}
+                  totalFavorites={favorites.length}
+                  currentFilter={currentFilter}
+                  setFilter={setCurrentFilter}
+                  styles={dynamicStyles}
+                  theme={theme}
+              />
+          )}
+
+          // FOOTER
           ListFooterComponent={() => (
-            <View style={styles.footer}>
-              {loading && <ActivityIndicator size="large" color="teal" />}
+            <View style={dynamicStyles.footer}>
+              {loading && characters.length > 0 && <ActivityIndicator size="large" color={theme.title} />}
+              
               {!loading && isConnected && (
-                <TouchableOpacity onPress={loadMore} style={styles.loadMoreButton}>
-                  <Text style={styles.loadMoreText}>Cargar más</Text>
+                <TouchableOpacity onPress={loadMore} style={dynamicStyles.loadMoreButton}>
+                  <Text style={dynamicStyles.loadMoreText}>Cargar más</Text>
                 </TouchableOpacity>
               )}
             </View>
           )}
         />
-      )}
+      
       {!isConnected && (
-        <View style={styles.offlineBanner}>
-          <Text style={styles.offlineText}>Modo Offline - Datos desactualizados</Text>
+        <View style={dynamicStyles.offlineBanner}>
+          <Text style={dynamicStyles.offlineText}>Modo Offline - Datos desactualizados</Text>
         </View>
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+// FUNCIÓN QUE DEFINE LOS ESTILOS DINÁMICOS
+const getStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.background, 
   },
+  // --- ESTILOS DE RESUMEN Y FILTROS ---
+  summaryContainer: {
+    padding: 15,
+    backgroundColor: theme.cardBackground,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.subText,
+  },
+  summaryTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.title,
+    marginBottom: 10,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 15,
+  },
+  statBox: {
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: theme.background,
+    minWidth: '45%',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: theme.text,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: theme.subText,
+  },
+  filterTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: theme.text,
+    marginBottom: 8,
+    marginTop: 5,
+  },
+  filterScroll: {
+    marginBottom: 10,
+  },
+  filterButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    backgroundColor: theme.background,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: theme.subText,
+  },
+  filterButtonActive: {
+    backgroundColor: theme.title,
+    borderColor: theme.title,
+  },
+  filterButtonText: {
+    color: theme.text,
+    fontWeight: '500',
+  },
+  filterButtonTextActive: {
+    color: theme.cardBackground, 
+    fontWeight: 'bold',
+  },
+
+
+  // --- ESTILOS DE LISTA ---
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.cardBackground, 
     borderRadius: 10,
     marginHorizontal: 15,
     marginVertical: 8,
     padding: 10,
-    shadowColor: '#000',
+    shadowColor: theme.text === '#ffffff' ? '#000000' : '#000', 
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: theme.text === '#ffffff' ? 0.3 : 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -129,17 +295,18 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: theme.text, 
   },
   status: {
     fontSize: 14,
-    color: 'gray',
+    color: theme.subText, 
   },
   footer: {
     padding: 20,
     alignItems: 'center',
   },
   loadMoreButton: {
-    backgroundColor: 'teal',
+    backgroundColor: theme.title, 
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 20,
@@ -153,10 +320,6 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
   offlineText: {
     color: 'white',
@@ -167,4 +330,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  text: {
+    color: theme.text
+  }
 });

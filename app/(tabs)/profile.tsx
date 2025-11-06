@@ -2,88 +2,109 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFavorites } from '../../contexts/FavoritesContext';
+import { useTheme } from '../../contexts/ThemeContext'; 
 import Constants from 'expo-constants';
+import { logEvent } from '../../telemetry/telemetry';
 
 export default function ProfileScreen() {
   const { dispatch } = useFavorites();
-  const appVersion = Constants.manifest?.version || '1.0.0';
+  const { themeMode, toggleTheme } = useTheme(); 
+  
+  // 💡 VERSIÓN ACTUALIZADA
+  const appVersion = Constants.manifest?.version || '1.0.4';
 
   const clearData = async () => {
-    Alert.alert(
-      'Borrar Datos',
-      '¿Estás seguro de que quieres borrar todos los datos, incluyendo tus favoritos?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Sí',
-          onPress: async () => {
-            try {
-              await AsyncStorage.clear();
-              dispatch({ type: 'SET_FAVORITES', payload: [] });
-              Alert.alert('¡Listo!', 'Todos los datos han sido borrados.');
-            } catch (error) {
-              console.error('Error clearing data:', error);
-              Alert.alert('Error', 'No se pudieron borrar los datos.');
-            }
-          },
-        },
-      ]
-    );
+    try {
+      await AsyncStorage.clear();       
+      dispatch({ type: 'SET_FAVORITES', payload: [] });
+      
+      // La lógica de re-evaluación del tema (toggleTheme) se mantiene
+      // para asegurar que el tema por defecto del sistema se cargue después del borrado.
+      
+      logEvent('Data Cleared', { action: 'Full reset via button' });
+      Alert.alert('¡Listo!', 'Todos los datos guardados han sido borrados.');
+    } catch (error) {
+      console.error('Error clearing data:', error);
+      logEvent('Error', { type: 'AsyncStorage Clear Failed', error: error.message });
+      Alert.alert('Error', 'No se pudieron borrar los datos.');
+    }
   };
+  
+  const dynamicStyles = getStyles(themeMode);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Configuración</Text>
+    <View style={dynamicStyles.container}>
+      <Text style={dynamicStyles.title}>Configuración</Text>
       
-      <TouchableOpacity style={styles.option} onPress={clearData}>
-        <Text style={styles.optionText}>Borrar datos guardados</Text>
+      {/* Botón de Cambio de Tema */}
+      <TouchableOpacity 
+        style={dynamicStyles.option} 
+        onPress={() => toggleTheme(themeMode)} 
+      >
+        <Text style={dynamicStyles.optionText}>
+          Cambiar a modo **{themeMode === 'light' ? 'Oscuro 🌙' : 'Claro ☀️'}**
+        </Text>
+      </TouchableOpacity>
+      
+      {/* Botón de Borrar Datos */}
+      <TouchableOpacity style={dynamicStyles.option} onPress={clearData}>
+        <Text style={[dynamicStyles.optionText, {color: 'red'}]}>Borrar todos los datos guardados</Text>
       </TouchableOpacity>
 
-      <View style={styles.versionContainer}>
-        <Text style={styles.versionText}>Versión de la aplicación: {appVersion}</Text>
+      <View style={dynamicStyles.versionContainer}>
+        <Text style={dynamicStyles.versionText}>Versión de la aplicación: {appVersion}</Text>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-    color: 'teal',
-  },
-  option: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  optionText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  versionContainer: {
-    marginTop: 'auto',
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  versionText: {
-    fontSize: 14,
-    color: 'gray',
-  },
-});
+const getStyles = (themeMode) => {
+  const theme = themeMode === 'light' 
+    ? { 
+        background: '#f0f0f0', cardBackground: '#fff', title: 'teal', text: '#333', versionText: 'gray',
+        shadowColor: '#000', shadowOpacity: 0.1
+      }
+    : { 
+        background: '#121212', cardBackground: '#1e1e1e', title: '#4db6ac', text: '#ffffff', versionText: '#ccc',
+        shadowColor: '#ffffff', shadowOpacity: 0.3
+      };
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+      padding: 20,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      textAlign: 'center',
+      color: theme.title,
+    },
+    option: {
+      backgroundColor: theme.cardBackground,
+      padding: 15,
+      borderRadius: 10,
+      marginBottom: 10,
+      shadowColor: theme.shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: theme.shadowOpacity,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    optionText: {
+      fontSize: 16,
+      color: theme.text,
+    },
+    versionContainer: {
+      marginTop: 'auto',
+      alignItems: 'center',
+      paddingVertical: 20,
+    },
+    versionText: {
+      fontSize: 14,
+      color: theme.versionText,
+    },
+  });
+};

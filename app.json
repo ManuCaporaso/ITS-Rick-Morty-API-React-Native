@@ -2,7 +2,7 @@
   "expo": {
     "name": "ITS-Rick-Morty-API",
     "slug": "ITS-Rick-Morty-API",
-    "version": "1.0.0",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "itsrickmortyapi",
