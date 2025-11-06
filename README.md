@@ -3,6 +3,7 @@ Una aplicación móvil educativa y de entretenimiento basada en el universo de l
 
 ## Integrantes
 **MANUEL CAPORASO**
+
 **CRISTIAN TESTASECA**
 
 ## 🚀 Cómo ejecutar el proyecto
