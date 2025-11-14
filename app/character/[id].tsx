@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { useFavorites } from '../../contexts/FavoritesContext';
-import { useTheme } from '../../contexts/ThemeContext'; 
-import { logEvent } from '../../telemetry/telemetry';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchCharacterById } from '../../api/rickAndMortyApi'; 
+import { useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { fetchCharacterById } from '../../api/rickAndMortyApi';
+import { useFavorites } from '../../contexts/FavoritesContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import { logEvent } from '../../telemetry/telemetry';
 
 export default function CharacterDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -164,37 +164,52 @@ const getStyles = (theme) => StyleSheet.create({
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
         marginBottom: 10,
-        shadowColor: theme.text === '#ffffff' ? '#111' : '#000', 
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: theme.text === '#ffffff' ? 0.4 : 0.1,
-        shadowRadius: 2,
-        elevation: 2,
+        borderTopWidth: 4,
+        borderTopColor: theme.neonBlue,
+        borderBottomWidth: 4,
+        borderBottomColor: theme.neonPink,
+        shadowColor: theme.neonGreen,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 15,
+        elevation: 12,
     },
     image: {
         width: 160,
         height: 160,
         borderRadius: 80,
-        borderWidth: 4,
-        borderColor: theme.title, 
+        borderWidth: 5,
+        borderColor: theme.neonGreen,
+        shadowColor: theme.neonGreen,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.9,
+        shadowRadius: 20,
+        elevation: 15,
     },
     headerInfo: {
         alignItems: 'center',
         marginTop: 15,
     },
     name: {
-        fontSize: 30,
+        fontSize: 32,
         fontWeight: '900',
-        color: theme.text,
+        color: theme.title,
         textAlign: 'center',
     },
     status: {
         fontSize: 18,
-        color: theme.subText,
-        marginTop: 5,
+        color: theme.neonPink,
+        marginTop: 8,
         fontStyle: 'italic',
+        fontWeight: 'bold',
     },
     favoriteButton: {
         marginTop: 15,
+        padding: 10,
+        borderRadius: 50,
+        borderWidth: 2,
+        borderColor: theme.accent,
+        backgroundColor: `${theme.accent}20`,
     },
     section: {
         paddingHorizontal: 20,
@@ -203,31 +218,36 @@ const getStyles = (theme) => StyleSheet.create({
         marginBottom: 10,
         borderRadius: 12,
         backgroundColor: theme.cardBackground,
-        elevation: 1,
-        shadowColor: theme.text === '#ffffff' ? '#111' : '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 1,
+        borderLeftWidth: 4,
+        borderLeftColor: theme.neonBlue,
+        borderRightWidth: 4,
+        borderRightColor: theme.neonPink,
+        shadowColor: theme.neonBlue,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 10,
+        elevation: 8,
     },
     sectionTitle: {
         fontSize: 22,
         fontWeight: 'bold',
         marginBottom: 10,
-        color: theme.title, 
-        borderBottomWidth: 2,
-        borderBottomColor: theme.background,
-        paddingBottom: 5,
+        color: theme.title,
+        borderBottomWidth: 3,
+        borderBottomColor: theme.neonPink,
+        paddingBottom: 8,
     },
     detailText: {
         fontSize: 16,
-        marginBottom: 5,
+        marginBottom: 8,
         color: theme.text,
     },
     episodeText: {
         fontSize: 16,
-        color: theme.subText,
-        marginBottom: 6,
-        paddingLeft: 5,
+        color: theme.neonPink,
+        marginBottom: 8,
+        paddingLeft: 10,
+        fontWeight: '600',
     },
     text: {
         color: theme.text

@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
 import { Link } from 'expo-router';
-import { logEvent } from '../../telemetry/telemetry';
-import { useNetInfo } from '../../hooks/useNetInfo';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { fetchCharacters } from '../../api/rickAndMortyApi';
-import { useTheme } from '../../contexts/ThemeContext'; 
-import { useFavorites } from '../../contexts/FavoritesContext'; 
+import { useFavorites } from '../../contexts/FavoritesContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useNetInfo } from '../../hooks/useNetInfo';
+import { logEvent } from '../../telemetry/telemetry';
 
 // Componente de Tarjeta de Personaje
 const CharacterCard = ({ character, styles }) => {
@@ -36,6 +36,15 @@ const SummaryHeader = ({ totalCharacters, totalFavorites, currentFilter, setFilt
 
     return (
         <View style={styles.summaryContainer}>
+            {/* LOGO RICK Y MORTY */}
+            <View style={styles.logoContainer}>
+                <Image 
+                    source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/b/b1/Rick_and_Morty.svg' }}
+                    style={styles.logo}
+                    resizeMode="contain"
+                />
+            </View>
+
             <Text style={styles.summaryTitle}>Estadísticas del Multiverso Rick & Morty</Text>
             
             <View style={styles.statsRow}>
@@ -205,14 +214,34 @@ const getStyles = (theme) => StyleSheet.create({
     padding: 15,
     backgroundColor: theme.cardBackground,
     marginBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.subText,
+    borderBottomWidth: 3,
+    borderBottomColor: theme.neonPink,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 5,
+    padding: 5,
+    borderRadius: 15,
+    backgroundColor: theme.background,
+    borderWidth: 2,
+    borderColor: theme.neonGreen,
+    shadowColor: theme.neonGreen,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  logo: {
+    width: 290,
+    height: 180,
+    tintColor: theme.title,
   },
   summaryTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: theme.title,
     marginBottom: 10,
+    textAlign: 'center',
   },
   statsRow: {
     flexDirection: 'row',
@@ -225,6 +254,8 @@ const getStyles = (theme) => StyleSheet.create({
     borderRadius: 8,
     backgroundColor: theme.background,
     minWidth: '45%',
+    borderWidth: 2,
+    borderColor: theme.neonBlue,
   },
   statNumber: {
     fontSize: 24,
@@ -251,12 +282,12 @@ const getStyles = (theme) => StyleSheet.create({
     borderRadius: 20,
     backgroundColor: theme.background,
     marginRight: 10,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: theme.subText,
   },
   filterButtonActive: {
     backgroundColor: theme.title,
-    borderColor: theme.title,
+    borderColor: theme.neonGreen,
   },
   filterButtonText: {
     color: theme.text,
@@ -267,7 +298,6 @@ const getStyles = (theme) => StyleSheet.create({
     fontWeight: 'bold',
   },
 
-
   // --- ESTILOS DE LISTA ---
   card: {
     flexDirection: 'row',
@@ -277,6 +307,8 @@ const getStyles = (theme) => StyleSheet.create({
     marginHorizontal: 15,
     marginVertical: 8,
     padding: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.neonBlue,
     shadowColor: theme.text === '#ffffff' ? '#000000' : '#000', 
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: theme.text === '#ffffff' ? 0.3 : 0.1,
@@ -288,6 +320,8 @@ const getStyles = (theme) => StyleSheet.create({
     height: 60,
     borderRadius: 30,
     marginRight: 15,
+    borderWidth: 2,
+    borderColor: theme.neonGreen,
   },
   info: {
     flex: 1,
@@ -310,9 +344,11 @@ const getStyles = (theme) => StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 20,
+    borderWidth: 2,
+    borderColor: theme.neonGreen,
   },
   loadMoreText: {
-    color: 'white',
+    color: theme.cardBackground,
     fontWeight: 'bold',
   },
   offlineBanner: {
